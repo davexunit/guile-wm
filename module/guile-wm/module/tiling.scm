@@ -106,6 +106,12 @@
       (split-element2 split)
       (split-element1 split)))
 
+(define (other-tile tile)
+  (let ((container (tile-container tile)))
+    (if (split? container)
+        (other-element container tile)
+        tile)))
+
 (define (tile-empty? tile) (not (tile-window tile)))
 
 (define (width-of el)
@@ -593,3 +599,21 @@ them both with one tile containing the selected tile's contents"
               (else (set-frame-content! super new-tile)))
         (set-tile-container! new-tile super)
         (place-window! selected-window new-tile #t))))
+
+(define-command (delete-tile)
+  "Delete the currently selected tile and replace the containing split
+with the other tile's contents."
+  (let* ((split (tile-container selected-tile))
+         (super (container-of split))
+         (window (tile-window (other-tile selected-tile)))
+         (tile (make-tile (height-of super) (width-of super))))
+    (for-each-tile hide-tile-window! split)
+    (cond
+     ((and (split? super) (eq? (split-element1 super) split))
+      (set-split-element1! super tile))
+     ((and (split? super) (eq? (split-element2 super) split))
+      (set-split-element2! super tile))
+     (else
+      (set-frame-content! super tile)))
+    (set-tile-container! tile super)
+    (place-window! window tile #t)))
